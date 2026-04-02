@@ -71,56 +71,79 @@ The server starts at `http://127.0.0.1:8000`.
 
 A lightweight CLI is available for health checks and ask requests.
 
+Use the `tony` launcher from the repo root:
+
+```bash
+./tony --help
+```
+
+To call `tony` as a shell command keyword from anywhere, install the symlink once:
+
+```bash
+./install_tony.sh
+```
+
+If needed, add `~/.local/bin` to your `PATH`.
+
+For a laptop-only setup against a remote server (for example via Tailscale), add a `.env` in this repo with:
+
+```bash
+AI_AGENT_SERVER_URL=http://<tailscale-host-or-ip>:8000
+AI_AGENT_TIMEOUT=30
+```
+
+The CLI loads `.env` automatically, and `--server-url` still overrides the env value.
+
 Run help:
 
 ```bash
-python -m cli.main --help
+./tony --help
 ```
 
 Health check:
 
 ```bash
-python -m cli.main health
+./tony health
 ```
 
 Ask example:
 
 ```bash
-python -m cli.main ask "Help me add a new endpoint" --session-id <SESSION_ID>
+./tony ask "Help me add a new endpoint" --session-id <SESSION_ID>
 ```
 
 Session commands:
 
 ```bash
-python -m cli.main session create --ttl-hours 168
-python -m cli.main session list
-python -m cli.main session get --session-id <SESSION_ID>
-python -m cli.main session cleanup
+./tony session create --ttl-hours 168
+./tony session list
+./tony session get --session-id <SESSION_ID>
+./tony session cleanup
 ```
 
 Workflow commands:
 
 ```bash
-python -m cli.main workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'
-python -m cli.main workflow async --steps-json '[{"tool":"git_status","args":{"path":"."}}]'
-python -m cli.main workflow get --run-id <RUN_ID> --watch
-python -m cli.main workflow get --run-id <RUN_ID> --watch --progress --events
+./tony workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'
+./tony workflow async --steps-json '[{"tool":"git_status","args":{"path":"."}}]'
+./tony workflow get --run-id <RUN_ID> --watch
+./tony workflow get --run-id <RUN_ID> --watch --progress --events
 ```
 
 Tools commands:
 
 ```bash
-python -m cli.main tools list-dir --path .
-python -m cli.main tools grep-search --query "AskRequest" --path .
-python -m cli.main tools diagnostics --path .
-python -m cli.main tools git-status --path .
+./tony tools list-dir --path .
+./tony tools grep-search --query "AskRequest" --path .
+./tony tools diagnostics --path .
+./tony tools git-status --path .
 ```
 
 Fix commands:
 
 ```bash
-python -m cli.main fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"
-python -m cli.main fix assisted-fix --path app.py --old-text "pritn('hi')" --new-text "print('hi')" --approve
+./tony fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"
+./tony fix assisted-fix --path app.py --old-text "pritn('hi')" --new-text "print('hi')" --approve
 ```
 
 Global options:

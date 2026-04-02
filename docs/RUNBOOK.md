@@ -14,15 +14,16 @@
 - Tool endpoints return status-based payloads.
 
 CLI smoke checks:
-- `python -m cli.main --help`
-- `python -m cli.main health`
-- `python -m cli.main ask "Return only ok" --output json`
-- `python -m cli.main session create`
-- `python -m cli.main workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `python -m cli.main workflow async --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `python -m cli.main workflow get --run-id <RUN_ID> --watch --progress --events`
-- `python -m cli.main tools list-dir --path .`
-- `python -m cli.main fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"`
+- `./install_tony.sh` (optional, installs `tony` into `~/.local/bin`)
+- `./tony --help`
+- `./tony health`
+- `./tony ask "Return only ok" --output json`
+- `./tony session create`
+- `./tony workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
+- `./tony workflow async --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
+- `./tony workflow get --run-id <RUN_ID> --watch --progress --events`
+- `./tony tools list-dir --path .`
+- `./tony fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"`
 
 Milestone 4 watch-mode options:
 - `--progress/--no-progress`: show per-poll status/progress/elapsed updates in human mode.
