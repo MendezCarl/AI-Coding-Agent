@@ -2,12 +2,18 @@ from fastapi import FastAPI
 
 from routes.ask import router as ask_router
 from routes.tools import router as tools_router
+from tools.workflow_runs import mark_incomplete_runs_failed
 
 app = FastAPI(
     title="AI Agent Server",
     description="Local AI agent server with Ollama and tool endpoints",
     version="0.1.0",
 )
+
+
+@app.on_event("startup")
+async def recover_incomplete_workflow_runs() -> None:
+    mark_incomplete_runs_failed("Server restarted before workflow completion")
 
 
 @app.get("/")

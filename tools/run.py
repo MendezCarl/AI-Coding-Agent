@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shlex
 import subprocess
+from pathlib import Path
 
 from tools.security import AGENT_ROOT, is_within_agent_root, resolve_under_agent_root
 

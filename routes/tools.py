@@ -1,17 +1,25 @@
 from fastapi import APIRouter
 
 from models.requests import (
+    AnalyzeFailureRequest,
     ApplyPatchRequest,
     ApproveProposalRequest,
+    AssistedFixRequest,
+    CreateSessionRequest,
     CreateIndexRequest,
     DeleteTopicRequest,
     DiagnosticsRequest,
+    ExecuteWorkflowAsyncRequest,
+    ExecuteWorkflowSyncRequest,
+    GetWorkflowRunRequest,
+    GetSessionRequest,
     GitDiffRequest,
     GitStatusRequest,
     GetProposalRequest,
     GrepSearchRequest,
     ListDirRequest,
     ListProposalsRequest,
+    ListSessionsRequest,
     QueryIndexRequest,
     ReadRequest,
     RefreshProposalRequest,
@@ -24,15 +32,11 @@ from models.requests import (
     WebSearchRequest,
     WriteRequest,
 )
-from tools.apply_patch import apply_patch
-from tools.diagnostics import diagnostics
-from tools.git_diff import git_diff
-from tools.git_status import git_status
-from tools.grep_search import grep_search
-from tools.list_dir import list_dir
-from tools.read import read_file
-from tools.run import run_command
+from services.fix_service import fix_service
+from services.orchestrator_service import WorkflowGuardError, orchestrator_service
+from services.tool_registry import tool_registry
 from tools.safe_fetch import safe_fetch
+from tools.sessions import cleanup_expired_sessions, create_session, get_session, list_sessions
 from tools.staging import (
     approve_proposal,
     cleanup_expired,
@@ -42,91 +46,157 @@ from tools.staging import (
     reject_proposal,
     stage_document,
 )
-from tools.vector_index import create_index, delete_topic, query_index, upsert_documents
+from tools.vector_index import create_index, delete_topic, upsert_documents
 from tools.web_search import web_search
-from tools.write import write_file
 
 router = APIRouter()
 
 
+@router.post("/create_session")
+async def create_agent_session(req: CreateSessionRequest):
+    return create_session(
+        ttl_hours=req.ttl_hours,
+        metadata=req.metadata,
+    )
+
+
+@router.post("/get_session")
+async def get_agent_session(req: GetSessionRequest):
+    return get_session(
+        session_id=req.session_id,
+        include_messages=req.include_messages,
+        include_turns=req.include_turns,
+        limit=req.limit,
+        offset=req.offset,
+    )
+
+
+@router.post("/list_sessions")
+async def list_agent_sessions(req: ListSessionsRequest):
+    return list_sessions(
+        limit=req.limit,
+        offset=req.offset,
+        include_expired=req.include_expired,
+    )
+
+
+@router.post("/cleanup_expired_sessions")
+async def cleanup_agent_sessions():
+    return cleanup_expired_sessions()
+
+
+@router.post("/execute_workflow_sync")
+async def execute_workflow_sync(req: ExecuteWorkflowSyncRequest):
+    try:
+        return orchestrator_service.execute_sync(
+            steps=[step.model_dump() for step in req.steps],
+            session_id=req.session_id,
+            metadata=req.metadata,
+        )
+    except WorkflowGuardError as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+
+
+@router.post("/execute_workflow_async")
+async def execute_workflow_async(req: ExecuteWorkflowAsyncRequest):
+    try:
+        return orchestrator_service.execute_async(
+            steps=[step.model_dump() for step in req.steps],
+            session_id=req.session_id,
+            metadata=req.metadata,
+        )
+    except WorkflowGuardError as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+
+
+@router.post("/get_workflow_run")
+async def get_workflow_run(req: GetWorkflowRunRequest):
+    return orchestrator_service.get_run(run_id=req.run_id)
+
+
+@router.post("/analyze_failure")
+async def analyze_failure(req: AnalyzeFailureRequest):
+    return fix_service.analyze_failure(
+        error_output=req.error_output,
+        path=req.path,
+        include_hidden=req.include_hidden,
+        max_search_results=req.max_search_results,
+    )
+
+
+@router.post("/assisted_fix")
+async def assisted_fix(req: AssistedFixRequest):
+    return fix_service.assisted_fix(
+        path=req.path,
+        old_text=req.old_text,
+        new_text=req.new_text,
+        approved=req.approved,
+        create_backup=req.create_backup,
+        verify_command=req.verify_command,
+        verify_cwd=req.verify_cwd,
+        verify_timeout=req.verify_timeout,
+    )
+
+
 @router.post("/run")
 async def run(req: RunRequest):
-    return run_command(
-        command=req.command,
-        cwd=req.cwd,
-        timeout=req.timeout,
-    )
+    return tool_registry.execute("run", req.model_dump())
 
 
 @router.post("/read")
 async def read(req: ReadRequest):
-    return read_file(
-        path=req.path,
-        start_line=req.start_line,
-        end_line=req.end_line,
-    )
+    return tool_registry.execute("read", req.model_dump())
 
 
 @router.post("/write")
 async def write(req: WriteRequest):
-    return write_file(
-        path=req.path,
-        content=req.content,
-        make_backup=req.make_backup,
-        create_parents=req.create_parents,
-    )
+    return tool_registry.execute("write", req.model_dump())
 
 
 @router.post("/list_dir")
 async def list_directory(req: ListDirRequest):
-    return list_dir(
-        path=req.path,
-        include_hidden=req.include_hidden,
-    )
+    return tool_registry.execute("list_dir", req.model_dump())
 
 
 @router.post("/grep_search")
 async def grep(req: GrepSearchRequest):
-    return grep_search(
-        query=req.query,
-        path=req.path,
-        is_regex=req.is_regex,
-        case_sensitive=req.case_sensitive,
-        max_results=req.max_results,
-        include_hidden=req.include_hidden,
-    )
+    return tool_registry.execute("grep_search", req.model_dump())
 
 
 @router.post("/apply_patch")
 async def patch(req: ApplyPatchRequest):
-    return apply_patch(
-        path=req.path,
-        old_text=req.old_text,
-        new_text=req.new_text,
-        replace_all=req.replace_all,
-        create_backup=req.create_backup,
-    )
+    return tool_registry.execute("apply_patch", req.model_dump())
 
 
 @router.post("/git_status")
 async def status(req: GitStatusRequest):
-    return git_status(path=req.path)
+    return tool_registry.execute("git_status", req.model_dump())
 
 
 @router.post("/git_diff")
 async def diff(req: GitDiffRequest):
-    return git_diff(
-        path=req.path,
-        staged=req.staged,
-    )
+    return tool_registry.execute("git_diff", req.model_dump())
 
 
 @router.post("/diagnostics")
 async def check_diagnostics(req: DiagnosticsRequest):
-    return diagnostics(
-        path=req.path,
-        include_hidden=req.include_hidden,
-    )
+    return tool_registry.execute("diagnostics", req.model_dump())
 
 
 @router.post("/create_index")
@@ -147,12 +217,7 @@ async def upsert_vector_documents(req: UpsertDocumentsRequest):
 
 @router.post("/query_index")
 async def query_vector_index(req: QueryIndexRequest):
-    return query_index(
-        index_name=req.index_name,
-        query=req.query,
-        top_k=req.top_k,
-        topic=req.topic,
-    )
+    return tool_registry.execute("query_index", req.model_dump())
 
 
 @router.post("/delete_topic")

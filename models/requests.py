@@ -3,9 +3,72 @@ from pydantic import BaseModel, Field
 
 class AskRequest(BaseModel):
     prompt: str
+    session_id: str | None = None
+    session_context_turns: int = Field(default=8, ge=0, le=20)
+    use_instructions: bool = True
+    include_legacy_instruction_docs: bool = False
     use_retrieval: bool = True
     top_k: int = Field(default=5, ge=1, le=20)
     index_name: str = "knowledge"
+
+
+class CreateSessionRequest(BaseModel):
+    ttl_hours: int = Field(default=168, ge=1, le=720)
+    metadata: dict = Field(default_factory=dict)
+
+
+class GetSessionRequest(BaseModel):
+    session_id: str
+    include_messages: bool = True
+    include_turns: bool = True
+    limit: int = Field(default=200, ge=1, le=2000)
+    offset: int = Field(default=0, ge=0)
+
+
+class ListSessionsRequest(BaseModel):
+    limit: int = Field(default=50, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
+    include_expired: bool = False
+
+
+class WorkflowStepInput(BaseModel):
+    tool: str
+    args: dict = Field(default_factory=dict)
+    label: str | None = None
+
+
+class ExecuteWorkflowSyncRequest(BaseModel):
+    steps: list[WorkflowStepInput] = Field(min_length=1, max_length=20)
+    session_id: str | None = None
+    metadata: dict = Field(default_factory=dict)
+
+
+class ExecuteWorkflowAsyncRequest(BaseModel):
+    steps: list[WorkflowStepInput] = Field(min_length=1, max_length=20)
+    session_id: str | None = None
+    metadata: dict = Field(default_factory=dict)
+
+
+class GetWorkflowRunRequest(BaseModel):
+    run_id: str
+
+
+class AnalyzeFailureRequest(BaseModel):
+    error_output: str
+    path: str | None = None
+    include_hidden: bool = False
+    max_search_results: int = Field(default=20, ge=1, le=50)
+
+
+class AssistedFixRequest(BaseModel):
+    path: str
+    old_text: str
+    new_text: str
+    approved: bool = False
+    create_backup: bool = True
+    verify_command: str | None = None
+    verify_cwd: str | None = None
+    verify_timeout: int = Field(default=60, ge=1, le=120)
 
 
 class RunRequest(BaseModel):

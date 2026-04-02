@@ -67,6 +67,75 @@ The server starts at `http://127.0.0.1:8000`.
 
 ---
 
+## CLI (Milestone 1)
+
+A lightweight CLI is available for health checks and ask requests.
+
+Run help:
+
+```bash
+python -m cli.main --help
+```
+
+Health check:
+
+```bash
+python -m cli.main health
+```
+
+Ask example:
+
+```bash
+python -m cli.main ask "Help me add a new endpoint" --session-id <SESSION_ID>
+```
+
+Session commands:
+
+```bash
+python -m cli.main session create --ttl-hours 168
+python -m cli.main session list
+python -m cli.main session get --session-id <SESSION_ID>
+python -m cli.main session cleanup
+```
+
+Workflow commands:
+
+```bash
+python -m cli.main workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'
+python -m cli.main workflow async --steps-json '[{"tool":"git_status","args":{"path":"."}}]'
+python -m cli.main workflow get --run-id <RUN_ID> --watch
+python -m cli.main workflow get --run-id <RUN_ID> --watch --progress --events
+```
+
+Tools commands:
+
+```bash
+python -m cli.main tools list-dir --path .
+python -m cli.main tools grep-search --query "AskRequest" --path .
+python -m cli.main tools diagnostics --path .
+python -m cli.main tools git-status --path .
+```
+
+Fix commands:
+
+```bash
+python -m cli.main fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"
+python -m cli.main fix assisted-fix --path app.py --old-text "pritn('hi')" --new-text "print('hi')" --approve
+```
+
+Global options:
+- `--server-url` (default `http://127.0.0.1:8000`)
+- `--timeout`
+- `--output` (`human` or `json`)
+- `--session-id`
+
+CLI Milestone 4 adds:
+- Richer human output rendering for structured payloads (for example `run`, `steps`, and tool result objects).
+- Workflow watch progress updates with elapsed time (`--progress/--no-progress`).
+- Workflow watch event streaming (`--events/--no-events`).
+
+---
+
 ## API Overview
 
 ### `POST /ask`
@@ -76,9 +145,96 @@ Send a prompt to the LLM. Optionally queries the vector index for relevant conte
 ```json
 {
   "prompt": "How do I add a new tool endpoint?",
+    "session_id": "optional-session-id",
+        "session_context_turns": 8,
+    "use_instructions": true,
+        "include_legacy_instruction_docs": false,
   "use_retrieval": true,
   "index_name": "knowledge",
   "top_k": 5
+}
+
+When `use_instructions` is true, markdown files under `docs/instructions/` are loaded as prompt context.
+Files with ALL-CAPS names (for example `docs/instructions/SECURITY_RULES.md`) are treated as hard truths and inserted before normal guidance.
+Set `include_legacy_instruction_docs=true` only for compatibility with the previous docs-wide loading behavior.
+```
+
+---
+
+### Session Tools
+
+| Endpoint | Description |
+|---|---|
+| `POST /create_session` | Create a new session with TTL and metadata |
+| `POST /get_session` | Get session state and optional message history |
+| `POST /list_sessions` | List sessions with pagination |
+| `POST /cleanup_expired_sessions` | Delete expired sessions and orphan messages |
+
+When `session_id` is passed to `/ask`, recent session messages are replayed into prompt context and turns are persisted with explicit started/completed/failed lifecycle states.
+
+---
+
+### Workflow Tools
+
+| Endpoint | Description |
+|---|---|
+| `POST /execute_workflow_sync` | Execute a linear workflow over an allowlisted set of tools |
+| `POST /execute_workflow_async` | Queue a linear workflow for background execution and return a run record |
+| `POST /get_workflow_run` | Fetch persisted workflow run status, step logs, and run events |
+
+Current workflow constraints:
+- Linear execution only
+- Maximum 20 steps
+- `run` tool timeout capped at 120 seconds inside workflows
+- Async execution uses in-process background threads
+- On server startup, incomplete queued/running workflow runs are marked failed
+- Failed workflow runs include failure_reason (`restart_recovery`, `runtime_exception`, `step_failure`, `validation_failure`)
+
+Example:
+
+```json
+{
+    "steps": [
+        {"tool": "list_dir", "args": {"path": "."}, "label": "inspect-root"},
+        {"tool": "git_status", "args": {"path": "."}, "label": "repo-status"}
+    ],
+    "metadata": {"purpose": "quick inspection"}
+}
+```
+
+---
+
+### Fix Tools
+
+| Endpoint | Description |
+|---|---|
+| `POST /analyze_failure` | Parse failure output, extract likely files/symbols, and return suggested next actions |
+| `POST /assisted_fix` | Apply one approved exact-text patch and optionally rerun one verification command |
+
+Current fix-flow constraints:
+- No autonomous looping
+- Explicit approval required before patch application
+- At most one verification rerun per request
+- Verification failure is reported but does not trigger automatic retries
+
+Example analysis request:
+
+```json
+{
+    "error_output": "NameError: name 'client' is not defined\napp.py:12",
+    "path": "."
+}
+```
+
+Example assisted fix request:
+
+```json
+{
+    "path": "app.py",
+    "old_text": "pritn('hello')",
+    "new_text": "print('hello')",
+    "approved": true,
+    "verify_command": "python -m py_compile app.py"
 }
 ```
 
