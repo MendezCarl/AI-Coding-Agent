@@ -20,6 +20,7 @@ from models.requests import (
     ListDirRequest,
     ListProposalsRequest,
     ListSessionsRequest,
+    OrchestrateTaskRequest,
     QueryIndexRequest,
     ReadRequest,
     RefreshProposalRequest,
@@ -34,6 +35,7 @@ from models.requests import (
 )
 from services.fix_service import fix_service
 from services.orchestrator_service import WorkflowGuardError, orchestrator_service
+from services.task_orchestrator_service import task_orchestrator_service
 from services.tool_registry import tool_registry
 from tools.safe_fetch import safe_fetch
 from tools.sessions import cleanup_expired_sessions, create_session, get_session, list_sessions
@@ -324,3 +326,13 @@ async def stage_web_result(req: StageWebResultRequest):
         document=document,
         ttl_hours=req.proposal_ttl_hours,
     )
+
+
+@router.post("/orchestrate_task")
+async def orchestrate_task(req: OrchestrateTaskRequest):
+    try:
+        return await task_orchestrator_service.orchestrate(req)
+    except WorkflowGuardError as e:
+        return {"status": "error", "error": str(e)}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}

@@ -229,6 +229,60 @@ async function run(argv, { version } = {}) {
     return result.ok ? 0 : 1;
   }
 
+  if (command === "do") {
+    const defs = {
+      "session-id": { type: "string" },
+      "max-steps": { type: "number", default: 12 },
+      "plan-only": { type: "boolean", default: false },
+      async: { type: "boolean", default: false },
+      "allow-write": { type: "boolean", default: false },
+      "metadata-json": { type: "string", default: "{}" },
+      "use-instructions": { type: "boolean", default: true },
+      "legacy-instruction-docs": { type: "boolean", default: false },
+      "use-retrieval": { type: "boolean", default: true },
+      "index-name": { type: "string", default: "knowledge" },
+      "top-k": { type: "number", default: 5 },
+      help: { type: "boolean", default: false },
+    };
+    const { options, positionals } = parseOptionsStrict(tail, defs);
+    if (options.help) {
+      // eslint-disable-next-line no-console
+      console.log(usageText({ version, command: "do" }));
+      return 0;
+    }
+    if (positionals.length < 1) {
+      printResult({ status: "error", error: "task is required" }, outputMode);
+      return 1;
+    }
+
+    let metadata;
+    try {
+      metadata = parseJsonObject(options["metadata-json"], "metadata_json");
+    } catch (e) {
+      printResult({ status: "error", error: String(e.message || e) }, outputMode);
+      return 1;
+    }
+
+    const task = positionals.join(" ");
+    const payload = {
+      task,
+      session_id: options["session-id"] || defaultSessionId,
+      max_steps: Number(options["max-steps"]),
+      plan_only: Boolean(options["plan-only"]),
+      run_async: Boolean(options.async),
+      allow_write: Boolean(options["allow-write"]),
+      metadata,
+      use_instructions: Boolean(options["use-instructions"]),
+      include_legacy_instruction_docs: Boolean(options["legacy-instruction-docs"]),
+      use_retrieval: Boolean(options["use-retrieval"]),
+      index_name: String(options["index-name"]),
+      top_k: Number(options["top-k"]),
+    };
+    const result = await client.post("/orchestrate_task", payload);
+    printResult(result.payload, outputMode);
+    return result.ok ? 0 : 1;
+  }
+
   // Session
   if (command === "session") {
     if (!sub) {
@@ -693,4 +747,3 @@ async function run(argv, { version } = {}) {
 }
 
 module.exports = { run };
-

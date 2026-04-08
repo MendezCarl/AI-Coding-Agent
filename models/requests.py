@@ -220,6 +220,23 @@ class StageWebResultRequest(BaseModel):
     proposal_ttl_hours: int = Field(default=168, ge=1, le=720)
 
 
+class OrchestrateTaskRequest(BaseModel):
+    task: str
+    session_id: str | None = None
+    max_steps: int = Field(default=12, ge=1, le=20)
+    plan_only: bool = False
+    run_async: bool = False
+    allow_write: bool = False
+    metadata: dict = Field(default_factory=dict)
+
+    # Optional context enrichment (mirrors /ask)
+    use_instructions: bool = True
+    include_legacy_instruction_docs: bool = False
+    use_retrieval: bool = True
+    top_k: int = Field(default=5, ge=1, le=20)
+    index_name: str = "knowledge"
+
+
 class SearchResult(BaseModel):
     title: str
     url: str

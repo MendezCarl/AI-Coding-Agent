@@ -125,6 +125,19 @@ Ask example:
 ./earl ask "Help me add a new endpoint" --session-id <SESSION_ID>
 ```
 
+Autonomous task orchestration (agent chooses tools automatically):
+
+```bash
+# Plan only (read-only tools by default)
+./earl do "Inspect the repo and summarize the current CLI commands" --plan-only
+
+# Execute a planned workflow (read-only)
+./earl do "Show me git status and list the top-level directories"
+
+# Allow file mutations (write/apply_patch) when you explicitly want changes
+./earl do "Update README to add a new section" --allow-write
+```
+
 Session commands:
 
 ```bash

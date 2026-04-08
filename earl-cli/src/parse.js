@@ -1,6 +1,6 @@
 function usageText({ version, command } = {}) {
   const v = version ? ` v${version}` : "";
-  if (command && command !== "ask" && command !== "session" && command !== "workflow" && command !== "tools" && command !== "fix") {
+  if (command && command !== "ask" && command !== "do" && command !== "session" && command !== "workflow" && command !== "tools" && command !== "fix") {
     // Keep detailed help lightweight; top-level help is the source of truth.
     return `earl${v}\n\nRun \`earl --help\` for full usage.\n`;
   }
@@ -19,6 +19,7 @@ function usageText({ version, command } = {}) {
     `Commands:\n` +
     `  health\n` +
     `  ask <prompt>\n` +
+    `  do <task>\n` +
     `  session create|get|list|cleanup\n` +
     `  workflow sync|async|get\n` +
     `  tools run|read|write|list-dir|grep-search|diagnostics|git-status|git-diff|apply-patch|query-index\n` +
