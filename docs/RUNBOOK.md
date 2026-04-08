@@ -4,7 +4,7 @@
 
 1. Activate virtual environment.
 2. Ensure Ollama is running and model is available.
-3. Start server with ./start_server.sh.
+3. Start server with `uvicorn agent:app --host 0.0.0.0 --port 8000`.
 4. Check health endpoint.
 
 ## Basic Validation
@@ -12,23 +12,6 @@
 - GET /health returns status ok.
 - POST /ask returns response and retrieval metadata.
 - Tool endpoints return status-based payloads.
-
-CLI smoke checks:
-- `./install_earl.sh` (optional, installs `earl` into `~/.local/bin`)
-- `./earl --help`
-- `./earl health`
-- `./earl ask "Return only ok" --output json`
-- `./earl session create`
-- `./earl workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `./earl workflow async --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `./earl workflow get --run-id <RUN_ID> --watch --progress --events`
-- `./earl tools list-dir --path .`
-- `./earl fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"`
-
-Milestone 4 watch-mode options:
-- `--progress/--no-progress`: show per-poll status/progress/elapsed updates in human mode.
-- `--events/--no-events`: stream newly observed workflow run events while polling.
-- `--output json`: suppress watch progress/event text and print only final JSON payload.
 
 ## Troubleshooting
 

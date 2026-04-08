@@ -2,14 +2,6 @@ fastapi
 uvicorn[standard]
 httpx
 pydantic
-rich
-python-dotenv
-typer
-orjson
-aiofiles
-langchain
-langchain-community
-tiktoken
 chromadb
 sentence-transformers
 beautifulsoup4

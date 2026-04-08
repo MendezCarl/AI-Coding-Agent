@@ -31,7 +31,6 @@ dist/
 # Environment files
 .env
 .env.*
-!.env.example
 
 # VS Code and OS artifacts
 .vscode/
@@ -42,10 +41,3 @@ dist/
 
 # Backups
 *.bak
-
-# Node / npm
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
