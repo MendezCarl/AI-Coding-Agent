@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from routes.ask import router as ask_router
 from routes.tools import router as tools_router
@@ -9,6 +12,23 @@ app = FastAPI(
     description="Local AI agent server with Ollama and tool endpoints",
     version="0.1.0",
 )
+
+_OPEN_PATHS = {"/", "/health"}
+
+
+@app.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    if request.url.path in _OPEN_PATHS:
+        return await call_next(request)
+    api_key = os.environ.get("AGENT_API_KEY")
+    if api_key:
+        provided = request.headers.get("X-API-Key", "")
+        if provided != api_key:
+            return JSONResponse(
+                status_code=401,
+                content={"status": "error", "error": "Unauthorized"},
+            )
+    return await call_next(request)
 
 
 @app.on_event("startup")

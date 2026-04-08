@@ -23,21 +23,25 @@ class ToolSpec:
     name: str
     handler: Callable[[dict, bool], dict]
     workflow_enabled: bool = True
+    # True = tool must be executed on the client laptop, not on the remote server
+    local: bool = False
 
 
 class ToolRegistry:
     def __init__(self) -> None:
         self._specs: dict[str, ToolSpec] = {
-            "apply_patch": ToolSpec("apply_patch", self._handle_apply_patch),
-            "diagnostics": ToolSpec("diagnostics", self._handle_diagnostics),
-            "git_diff": ToolSpec("git_diff", self._handle_git_diff),
-            "git_status": ToolSpec("git_status", self._handle_git_status),
-            "grep_search": ToolSpec("grep_search", self._handle_grep_search),
-            "list_dir": ToolSpec("list_dir", self._handle_list_dir),
-            "query_index": ToolSpec("query_index", self._handle_query_index),
-            "read": ToolSpec("read", self._handle_read),
-            "run": ToolSpec("run", self._handle_run),
-            "write": ToolSpec("write", self._handle_write),
+            # Client-local tools: executed on the laptop, not on the server
+            "apply_patch": ToolSpec("apply_patch", self._handle_apply_patch, local=True),
+            "diagnostics": ToolSpec("diagnostics", self._handle_diagnostics, local=True),
+            "git_diff": ToolSpec("git_diff", self._handle_git_diff, local=True),
+            "git_status": ToolSpec("git_status", self._handle_git_status, local=True),
+            "grep_search": ToolSpec("grep_search", self._handle_grep_search, local=True),
+            "list_dir": ToolSpec("list_dir", self._handle_list_dir, local=True),
+            "read": ToolSpec("read", self._handle_read, local=True),
+            "run": ToolSpec("run", self._handle_run, local=True),
+            "write": ToolSpec("write", self._handle_write, local=True),
+            # Server-side tools: executed on the remote server
+            "query_index": ToolSpec("query_index", self._handle_query_index, local=False),
         }
 
     def execute(self, tool_name: str, args: dict, for_workflow: bool = False) -> dict:
@@ -62,8 +66,14 @@ class ToolRegistry:
                 "tool": tool_name,
             }
 
+    def get_spec(self, tool_name: str) -> ToolSpec | None:
+        return self._specs.get(tool_name)
+
     def list_workflow_tools(self) -> list[str]:
         return sorted(name for name, spec in self._specs.items() if spec.workflow_enabled)
+
+    def list_local_tools(self) -> list[str]:
+        return sorted(name for name, spec in self._specs.items() if spec.local)
 
     @staticmethod
     def _require(args: dict, key: str) -> str:

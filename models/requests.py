@@ -237,6 +237,26 @@ class OrchestrateTaskRequest(BaseModel):
     index_name: str = "knowledge"
 
 
+class StartTaskRequest(BaseModel):
+    """Start an interactive client-server task session."""
+    task: str
+    session_id: str | None = None
+    max_steps: int = Field(default=12, ge=1, le=20)
+    allow_write: bool = False
+    metadata: dict = Field(default_factory=dict)
+    use_instructions: bool = True
+    include_legacy_instruction_docs: bool = False
+    use_retrieval: bool = True
+    top_k: int = Field(default=5, ge=1, le=20)
+    index_name: str = "knowledge"
+
+
+class ToolResultRequest(BaseModel):
+    """Submit the result of a client-executed local tool."""
+    tool_name: str
+    result: dict
+
+
 class SearchResult(BaseModel):
     title: str
     url: str

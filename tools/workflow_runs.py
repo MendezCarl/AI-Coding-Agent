@@ -8,7 +8,7 @@ from uuid import uuid4
 from tools.security import AGENT_ROOT
 
 DB_PATH = AGENT_ROOT / ".agent_data" / "workflow_runs.db"
-ALLOWED_RUN_STATUSES = {"pending", "queued", "running", "succeeded", "failed", "cancelled"}
+ALLOWED_RUN_STATUSES = {"pending", "queued", "running", "waiting_for_tool", "succeeded", "failed", "cancelled"}
 ALLOWED_STEP_STATUSES = {"succeeded", "failed", "skipped"}
 TERMINAL_RUN_STATUSES = {"succeeded", "failed", "cancelled"}
 ALLOWED_FAILURE_REASONS = {
@@ -84,6 +84,8 @@ def _db() -> sqlite3.Connection:
     cols = {row["name"] for row in conn.execute("PRAGMA table_info(workflow_runs)").fetchall()}
     if "failure_reason" not in cols:
         conn.execute("ALTER TABLE workflow_runs ADD COLUMN failure_reason TEXT")
+    if "interactive_state" not in cols:
+        conn.execute("ALTER TABLE workflow_runs ADD COLUMN interactive_state TEXT")
 
     conn.commit()
     return conn
@@ -307,5 +309,37 @@ def ensure_terminal_failed(run_id: str, reason: str, message: str) -> dict:
             error=message,
             failure_reason=reason,
         )
+    except Exception as e:
+        return {"status": "error", "error": str(e), "run_id": run_id}
+
+
+def save_interactive_state(run_id: str, state: dict) -> dict:
+    """Persist the paused interactive execution state for a waiting_for_tool run."""
+    try:
+        now = _now_iso()
+        with _db() as conn:
+            conn.execute(
+                "UPDATE workflow_runs SET interactive_state = ?, updated_at = ? WHERE id = ?",
+                (json.dumps(state), now, run_id),
+            )
+            conn.commit()
+        return {"status": "ok", "run_id": run_id}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "run_id": run_id}
+
+
+def get_interactive_state(run_id: str) -> dict:
+    """Retrieve the paused interactive execution state for a waiting_for_tool run."""
+    try:
+        with _db() as conn:
+            row = conn.execute(
+                "SELECT interactive_state FROM workflow_runs WHERE id = ?", (run_id,)
+            ).fetchone()
+        if not row:
+            return {"status": "error", "error": "Workflow run not found", "run_id": run_id}
+        raw = row["interactive_state"]
+        if not raw:
+            return {"status": "error", "error": "No interactive state saved for this run", "run_id": run_id}
+        return {"status": "ok", "state": json.loads(raw)}
     except Exception as e:
         return {"status": "error", "error": str(e), "run_id": run_id}

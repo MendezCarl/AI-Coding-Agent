@@ -28,6 +28,8 @@ from models.requests import (
     RunRequest,
     StageDocumentRequest,
     StageWebResultRequest,
+    StartTaskRequest,
+    ToolResultRequest,
     UpsertDocumentsRequest,
     WebFetchRequest,
     WebSearchRequest,
@@ -334,5 +336,63 @@ async def orchestrate_task(req: OrchestrateTaskRequest):
         return await task_orchestrator_service.orchestrate(req)
     except WorkflowGuardError as e:
         return {"status": "error", "error": str(e)}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@router.post("/task/start")
+async def task_start(req: StartTaskRequest):
+    """Plan a task and begin interactive client-server execution.
+
+    The server plans the workflow via the LLM, executes any server-side steps
+    immediately, then pauses at the first local tool and returns a tool_call
+    for the client to execute.
+
+    Response shape:
+      {"status": "ok", "run_id": ..., "next": "tool_call", "tool_call": {tool, args, label, step_index}}
+      {"status": "ok", "run_id": ..., "next": "complete",  "run": ..., "steps": ...}
+      {"status": "ok", "run_id": ..., "next": "failed",    "error": ...}
+    """
+    try:
+        orchestrate_req = OrchestrateTaskRequest(
+            task=req.task,
+            session_id=req.session_id,
+            max_steps=req.max_steps,
+            plan_only=True,
+            allow_write=req.allow_write,
+            metadata=req.metadata,
+            use_instructions=req.use_instructions,
+            include_legacy_instruction_docs=req.include_legacy_instruction_docs,
+            use_retrieval=req.use_retrieval,
+            top_k=req.top_k,
+            index_name=req.index_name,
+        )
+        plan_result = await task_orchestrator_service.orchestrate(orchestrate_req)
+        if plan_result.get("status") != "ok":
+            return plan_result
+        steps = plan_result["steps"]
+        return orchestrator_service.start_interactive(
+            steps=steps,
+            session_id=req.session_id,
+            metadata=req.metadata,
+        )
+    except WorkflowGuardError as e:
+        return {"status": "error", "error": str(e)}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@router.post("/task/{run_id}/tool_result")
+async def task_tool_result(run_id: str, req: ToolResultRequest):
+    """Submit the result of a client-executed local tool and receive the next instruction.
+
+    Response shape is the same as /task/start.
+    """
+    try:
+        return orchestrator_service.resume_interactive(
+            run_id=run_id,
+            tool_name=req.tool_name,
+            result=req.result,
+        )
     except Exception as e:
         return {"status": "error", "error": str(e)}
