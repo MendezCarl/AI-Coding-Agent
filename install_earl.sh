@@ -3,12 +3,12 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${HOME}/.local/bin"
-TARGET_PATH="${TARGET_DIR}/tony"
+TARGET_PATH="${TARGET_DIR}/earl"
 
 mkdir -p "$TARGET_DIR"
-ln -sfn "$ROOT_DIR/tony" "$TARGET_PATH"
+ln -sfn "$ROOT_DIR/earl" "$TARGET_PATH"
 
-echo "Installed: $TARGET_PATH -> $ROOT_DIR/tony"
+echo "Installed: $TARGET_PATH -> $ROOT_DIR/earl"
 
 case ":${PATH}:" in
   *":${TARGET_DIR}:"*)
@@ -19,3 +19,4 @@ case ":${PATH}:" in
     echo "export PATH=\"${TARGET_DIR}:\$PATH\""
     ;;
 esac
+

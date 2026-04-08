@@ -14,16 +14,16 @@
 - Tool endpoints return status-based payloads.
 
 CLI smoke checks:
-- `./install_tony.sh` (optional, installs `tony` into `~/.local/bin`)
-- `./tony --help`
-- `./tony health`
-- `./tony ask "Return only ok" --output json`
-- `./tony session create`
-- `./tony workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `./tony workflow async --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
-- `./tony workflow get --run-id <RUN_ID> --watch --progress --events`
-- `./tony tools list-dir --path .`
-- `./tony fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"`
+- `./install_earl.sh` (optional, installs `earl` into `~/.local/bin`)
+- `./earl --help`
+- `./earl health`
+- `./earl ask "Return only ok" --output json`
+- `./earl session create`
+- `./earl workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
+- `./earl workflow async --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'`
+- `./earl workflow get --run-id <RUN_ID> --watch --progress --events`
+- `./earl tools list-dir --path .`
+- `./earl fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"`
 
 Milestone 4 watch-mode options:
 - `--progress/--no-progress`: show per-poll status/progress/elapsed updates in human mode.

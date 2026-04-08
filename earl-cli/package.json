@@ -1,0 +1,25 @@
+{
+  "name": "@carlosmendez/earl",
+  "version": "0.1.0",
+  "description": "Node.js CLI for the AI Agent Server (command: earl)",
+  "license": "UNLICENSED",
+  "bin": {
+    "earl": "bin/earl.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "earl",
+    "ai",
+    "agent",
+    "cli"
+  ]
+}

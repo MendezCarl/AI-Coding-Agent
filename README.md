@@ -71,19 +71,32 @@ The server starts at `http://127.0.0.1:8000`.
 
 A lightweight CLI is available for health checks and ask requests.
 
-Use the `tony` launcher from the repo root:
+Use the `earl` launcher from the repo root (Node.js 18+):
 
 ```bash
-./tony --help
+./earl --help
 ```
 
-To call `tony` as a shell command keyword from anywhere, install the symlink once:
+To call `earl` as a shell command keyword from anywhere, install the symlink once:
 
 ```bash
-./install_tony.sh
+./install_earl.sh
 ```
 
 If needed, add `~/.local/bin` to your `PATH`.
+
+Alternatively, once published to npm, install globally:
+
+```bash
+npm i -g @carlosmendez/earl
+earl --help
+```
+
+Or run without installing:
+
+```bash
+npx @carlosmendez/earl --help
+```
 
 For a laptop-only setup against a remote server (for example via Tailscale), add a `.env` in this repo with:
 
@@ -97,53 +110,53 @@ The CLI loads `.env` automatically, and `--server-url` still overrides the env v
 Run help:
 
 ```bash
-./tony --help
+./earl --help
 ```
 
 Health check:
 
 ```bash
-./tony health
+./earl health
 ```
 
 Ask example:
 
 ```bash
-./tony ask "Help me add a new endpoint" --session-id <SESSION_ID>
+./earl ask "Help me add a new endpoint" --session-id <SESSION_ID>
 ```
 
 Session commands:
 
 ```bash
-./tony session create --ttl-hours 168
-./tony session list
-./tony session get --session-id <SESSION_ID>
-./tony session cleanup
+./earl session create --ttl-hours 168
+./earl session list
+./earl session get --session-id <SESSION_ID>
+./earl session cleanup
 ```
 
 Workflow commands:
 
 ```bash
-./tony workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'
-./tony workflow async --steps-json '[{"tool":"git_status","args":{"path":"."}}]'
-./tony workflow get --run-id <RUN_ID> --watch
-./tony workflow get --run-id <RUN_ID> --watch --progress --events
+./earl workflow sync --steps-json '[{"tool":"list_dir","args":{"path":"."}}]'
+./earl workflow async --steps-json '[{"tool":"git_status","args":{"path":"."}}]'
+./earl workflow get --run-id <RUN_ID> --watch
+./earl workflow get --run-id <RUN_ID> --watch --progress --events
 ```
 
 Tools commands:
 
 ```bash
-./tony tools list-dir --path .
-./tony tools grep-search --query "AskRequest" --path .
-./tony tools diagnostics --path .
-./tony tools git-status --path .
+./earl tools list-dir --path .
+./earl tools grep-search --query "AskRequest" --path .
+./earl tools diagnostics --path .
+./earl tools git-status --path .
 ```
 
 Fix commands:
 
 ```bash
-./tony fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"
-./tony fix assisted-fix --path app.py --old-text "pritn('hi')" --new-text "print('hi')" --approve
+./earl fix analyze-failure --error-output "NameError: name 'x' is not defined\napp.py:3"
+./earl fix assisted-fix --path app.py --old-text "pritn('hi')" --new-text "print('hi')" --approve
 ```
 
 Global options:
@@ -156,6 +169,8 @@ CLI Milestone 4 adds:
 - Richer human output rendering for structured payloads (for example `run`, `steps`, and tool result objects).
 - Workflow watch progress updates with elapsed time (`--progress/--no-progress`).
 - Workflow watch event streaming (`--events/--no-events`).
+
+`./tony` is kept as a deprecated alias that forwards to `./earl`.
 
 ---
 
